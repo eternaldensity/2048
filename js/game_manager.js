@@ -149,7 +149,7 @@ GameManager.prototype.move = function (direction) {
   // Traverse the grid in the right direction and move tiles
   traversals.x.forEach(function (x) {
     traversals.y.forEach(function (y) {
-      cell = { x: x, y: y };
+      cell = self.offsetCell({ x: x, y: y },vector);
       tile = self.grid.cellContent(cell);
 
       if (tile) {
@@ -223,6 +223,27 @@ GameManager.prototype.buildTraversals = function (vector) {
   return traversals;
 };
 
+GameManager.prototype.offsetCell = function (cell, vector) {
+	if (vector.x) //going left or right
+	{
+		if(cell.y == 2 || cell.y == 3) return {x: (cell.x+3)%6, y: cell.y};
+	}else{
+		if(cell.x == 2 || cell.x == 3) return {x: cell.x, y: (cell.y+3)%6};
+	}
+	return cell;
+}
+
+GameManager.prototype.wraparoundCell = function (cell,vector) {
+	if(!vector)	return {x: (cell.x+6)%6, y: (cell.y+6)%6};
+	if (vector.x) //going left or right
+	{
+		if(cell.y == 2 || cell.y == 3) return {x: (cell.x+6)%6, y: cell.y};
+	}else{
+		if(cell.x == 2 || cell.x == 3) return {x: cell.x, y: (cell.y+6)%6};
+	}
+	return cell;
+}
+
 GameManager.prototype.findFarthestPosition = function (cell, vector) {
   var previous;
 
@@ -230,12 +251,14 @@ GameManager.prototype.findFarthestPosition = function (cell, vector) {
   do {
     previous = cell;
     cell     = { x: previous.x + vector.x, y: previous.y + vector.y };
-  } while (this.grid.withinBounds(cell) &&
-           this.grid.cellAvailable(cell));
+	warpPrevious = this.offsetCell(previous,vector);
+	warpCell = { x: warpPrevious.x + vector.x, y: warpPrevious.y + vector.y };
+  } while (this.grid.withinBounds(warpCell) &&
+           this.grid.cellAvailable(this.wraparoundCell(cell)));
 
   return {
-    farthest: previous,
-    next: cell // Used to check if a merge is required
+    farthest: this.wraparoundCell(previous),
+    next: this.wraparoundCell(cell,vector) // Used to check if a merge is required
   };
 };
 
